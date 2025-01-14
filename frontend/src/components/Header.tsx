@@ -99,8 +99,8 @@ const Header: React.FC = () => {
                                             <img src={userImg} alt="user" className="user-img" />
                                         </DropdownToggle>
                                         <DropdownMenu end>
-                                            <DropdownItem onClick={() => navigate('/login')}>SIGN IN</DropdownItem>
-                                            <DropdownItem onClick={() => navigate('/register')}>SIGN UP</DropdownItem>
+                                            <DropdownItem onClick={() => navigate('/login')}>Log In</DropdownItem>
+                                            <DropdownItem onClick={() => navigate('/register')}>Register</DropdownItem>
                                         </DropdownMenu>
                                     </UncontrolledDropdown>
                                 </Nav>

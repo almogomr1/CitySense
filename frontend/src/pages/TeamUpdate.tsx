@@ -2,55 +2,59 @@
 import { SubmitHandler, useForm } from "react-hook-form";
 import { Button, Card, CardBody, Col, Form, FormGroup, Label, Row } from "reactstrap";
 import classnames from "classnames";
-import { TeamCreateRequest } from "../redux/api/types";
+import { TeamUpdateRequest } from "../redux/api/types";
 import { useEffect, useState } from "react";
-import { useCreateTeamMutation, useGetTeamMembersQuery } from "../redux/api/teamAPI";
+import { useUpdateTeamMutation, useGetTeamQuery, useGetTeamMembersQuery } from "../redux/api/teamAPI";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
-const TeamCreate: React.FC = () => {
+const TeamUpdate: React.FC = () => {
+    const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
 
-    // React Hook Form
     const {
         register,
         handleSubmit,
         formState: { errors },
-    } = useForm<TeamCreateRequest>();
+        setValue,
+    } = useForm<TeamUpdateRequest>();
 
-    // Local State
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+    const { data: teamData, isLoading: isFetchingTeam } = useGetTeamQuery(id || "");
+    const { data: teamMembers, isLoading: isFetchingMembers } = useGetTeamMembersQuery();
+    const [updateTeam, { isLoading, isError, error, isSuccess, data }] = useUpdateTeamMutation();
 
-    // Redux Toolkit Queries
-    const [createTeam, { isLoading, isError, error, isSuccess, data }] = useCreateTeamMutation();
-    const { data: teamMembers, refetch: refetchTeamMember } = useGetTeamMembersQuery();
-
-    // Refetch team members on load
     useEffect(() => {
-        refetchTeamMember();
-    }, []);
+        if (teamData) {
+            setValue("name", teamData.name);
+            setValue("members", teamData.members || []);
+        }
+    }, [teamData]);
 
-    // Handle API success and error feedback
     useEffect(() => {
         if (isSuccess) {
-            toast.success(data?.message || "Team created successfully!");
+            toast.success(data?.message || "Team updated successfully!");
             navigate("/authority/teams");
         }
         if (isError) {
             const errorData = (error as any)?.data?.error;
             if (Array.isArray(errorData)) {
-                errorData.forEach((el: { message: string }) =>
-                    toast.error(el.message, { position: "top-right" })
+                errorData.forEach((el: any) =>
+                    toast.error(el.message, {
+                        position: "top-right",
+                    })
                 );
             } else {
-                const errorMsg = (error as any)?.data?.message || "An unexpected error occurred!";
-                toast.error(errorMsg, { position: "top-right" });
+                const errorMsg =
+                    (error as any)?.data?.message || "An unexpected error occurred!";
+                toast.error(errorMsg, {
+                    position: "top-right",
+                });
             }
         }
     }, [isSuccess, isError]);
 
-    // Form submission handler
-    const onSubmit: SubmitHandler<TeamCreateRequest> = async (formData) => {
+    const onSubmit: SubmitHandler<TeamUpdateRequest> = async (formData) => {
         setIsSubmitting(true);
         try {
             const form = new FormData();
@@ -58,25 +62,28 @@ const TeamCreate: React.FC = () => {
             if (formData.image && formData.image[0]) {
                 form.append("image", formData.image[0]);
             }
-            formData.members.forEach((member) => form.append("members", member));
-            await createTeam(form);
+            form.append("members", JSON.stringify(formData.members));
+            await updateTeam({ id, team: form });
         } finally {
             setIsSubmitting(false);
         }
     };
 
+    if (isFetchingTeam || isFetchingMembers) {
+        return <p>Loading team details...</p>;
+    }
+
     return (
         <div className="container main-board">
             <Row className="my-3">
                 <Col>
-                    <h3 className="mb-3">Create Team</h3>
+                    <h3 className="mb-3">Update Team</h3>
                 </Col>
             </Row>
             <Card>
                 <CardBody>
                     <Form onSubmit={handleSubmit(onSubmit)}>
                         <Row>
-                            {/* Team Name */}
                             <Col md={6}>
                                 <FormGroup>
                                     <Label for="name">Name</Label>
@@ -93,7 +100,6 @@ const TeamCreate: React.FC = () => {
                                 </FormGroup>
                             </Col>
 
-                            {/* Team Icon */}
                             <Col md={6}>
                                 <FormGroup>
                                     <Label for="image">Team Icon</Label>
@@ -104,9 +110,7 @@ const TeamCreate: React.FC = () => {
                                         id="image"
                                         type="file"
                                         accept="image/*"
-                                        {...register("image", {
-                                            required: "Team Icon is required.",
-                                        })}
+                                        {...register("image")}
                                     />
                                     {errors.image && (
                                         <small className="text-danger">{errors.image.message}</small>
@@ -114,34 +118,27 @@ const TeamCreate: React.FC = () => {
                                 </FormGroup>
                             </Col>
                         </Row>
-
-                        {/* Members Selection */}
                         <Row>
                             <Col md={6}>
                                 <FormGroup>
                                     <Label for="members">Members</Label>
                                     <select
+                                        multiple
                                         className={`form-control ${classnames({
                                             "is-invalid": errors.members,
                                         })}`}
                                         id="members"
-                                        multiple
                                         {...register("members", {
                                             required: "Please select at least one member.",
                                         })}
                                     >
-                                        <option value="" disabled>Select members</option>
-                                        {teamMembers &&
-                                            teamMembers.map(
-                                                (
-                                                    teamMember: { _id: string; fullname: string },
-                                                    index: number
-                                                ) => (
-                                                    <option key={teamMember._id} value={teamMember._id}>
-                                                        {teamMember.fullname}
-                                                    </option>
-                                                )
-                                            )}
+                                        {teamMembers && teamMembers.map(
+                                            (member: { _id: string; fullname: string }) => (
+                                                <option key={member._id} value={member._id}>
+                                                    {member.fullname}
+                                                </option>
+                                            )
+                                        )}
                                     </select>
                                     {errors.members && (
                                         <small className="text-danger">{errors.members.message}</small>
@@ -150,15 +147,11 @@ const TeamCreate: React.FC = () => {
                             </Col>
                         </Row>
 
-                        {/* Submit Button */}
+                        {/* Buttons */}
                         <Row className="mt-4">
                             <Col>
-                                <Button
-                                    type="submit"
-                                    color="primary"
-                                    disabled={isSubmitting || isLoading}
-                                >
-                                    {isSubmitting ? "Submitting..." : "Create Team"}
+                                <Button type="submit" color="primary" disabled={isSubmitting || isLoading}>
+                                    {isSubmitting ? "Submitting..." : "Update Team"}
                                 </Button>
                             </Col>
                         </Row>
@@ -169,4 +162,4 @@ const TeamCreate: React.FC = () => {
     );
 };
 
-export default TeamCreate;
+export default TeamUpdate;

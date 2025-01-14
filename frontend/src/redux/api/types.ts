@@ -36,6 +36,14 @@ export interface IssueSubmissionRequest {
 
 export interface TeamCreateRequest {
     name: string;
+    image: string;
+    members: Array<string>;
+}
+
+export interface TeamUpdateRequest {
+    name: string;
+    image: string;
+    members: Array<string>;
 }
 
 export interface IIssue {
