@@ -1,13 +1,27 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { SubmitHandler, useForm } from "react-hook-form";
-import { Button, Card, CardBody, Col, Form, FormGroup, Label, Row } from "reactstrap";
-import classnames from "classnames";
-import { TeamUpdateRequest } from "../redux/api/types";
+import {
+    Button,
+    Card,
+    CardBody,
+    Col,
+    Form,
+    FormGroup,
+    Label,
+    Row,
+} from "reactstrap";
 import { useEffect, useState } from "react";
-import { useUpdateTeamMutation, useGetTeamQuery, useGetTeamMembersQuery } from "../redux/api/teamAPI";
+import {
+    useUpdateTeamMutation,
+    useGetTeamQuery,
+} from "../redux/api/teamAPI";
 import { toast } from "react-toastify";
 import { useNavigate, useParams } from "react-router-dom";
+import FullScreenLoader from "../components/FullScreenLoader";
+import classnames from "classnames";
+import { TeamUpdateRequest } from "../redux/api/types";
 
+// Main component
 const TeamUpdate: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -19,37 +33,39 @@ const TeamUpdate: React.FC = () => {
         setValue,
     } = useForm<TeamUpdateRequest>();
 
-    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-    const { data: teamData, isLoading: isFetchingTeam } = useGetTeamQuery(id || "");
-    const { data: teamMembers, isLoading: isFetchingMembers } = useGetTeamMembersQuery();
-    const [updateTeam, { isLoading, isError, error, isSuccess, data }] = useUpdateTeamMutation();
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
+    const { data: teamData, isLoading: isFetchingTeam } = useGetTeamQuery(id || "");
+    const [updateTeam, { isLoading, isError, error, isSuccess, data }] =
+        useUpdateTeamMutation();
+
+    // Pre-populate fields from server's response
     useEffect(() => {
         if (teamData) {
             setValue("name", teamData.name);
-            setValue("members", teamData.members || []);
+            setValue("category", teamData.category);
+            setValue("availability", teamData.availability);
         }
-    }, [teamData]);
+    }, [teamData, setValue]);
 
+    // Handle success and error notifications
     useEffect(() => {
         if (isSuccess) {
             toast.success(data?.message || "Team updated successfully!");
             navigate("/authority/teams");
         }
+
         if (isError) {
             const errorData = (error as any)?.data?.error;
             if (Array.isArray(errorData)) {
                 errorData.forEach((el: any) =>
-                    toast.error(el.message, {
-                        position: "top-right",
-                    })
+                    toast.error(el.message, { position: "top-right" })
                 );
             } else {
-                const errorMsg =
-                    (error as any)?.data?.message || "An unexpected error occurred!";
-                toast.error(errorMsg, {
-                    position: "top-right",
-                });
+                toast.error(
+                    (error as any)?.data?.message || "An unexpected error occurred!",
+                    { position: "top-right" }
+                );
             }
         }
     }, [isSuccess, isError]);
@@ -59,34 +75,39 @@ const TeamUpdate: React.FC = () => {
         try {
             const form = new FormData();
             form.append("name", formData.name);
+
             if (formData.image && formData.image[0]) {
                 form.append("image", formData.image[0]);
             }
-            form.append("members", JSON.stringify(formData.members));
+
+            form.append("category", formData.category);
+            form.append("availability", formData.availability);
+
             await updateTeam({ id, team: form });
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    if (isFetchingTeam || isFetchingMembers) {
-        return <p>Loading team details...</p>;
+    if (isFetchingTeam) {
+        return <FullScreenLoader />;
     }
 
     return (
         <div className="container main-board">
             <Row className="my-3">
                 <Col>
-                    <h3 className="mb-3">Update Team</h3>
+                    <h3 className="mb-3">Update Team # {teamData?.teamNumber}</h3>
                 </Col>
             </Row>
             <Card>
                 <CardBody>
                     <Form onSubmit={handleSubmit(onSubmit)}>
                         <Row>
+                            {/* Team Name Input */}
                             <Col md={6}>
                                 <FormGroup>
-                                    <Label for="name">Name</Label>
+                                    <Label for="name">Team Name</Label>
                                     <input
                                         className={`form-control ${classnames({
                                             "is-invalid": errors.name,
@@ -100,6 +121,7 @@ const TeamUpdate: React.FC = () => {
                                 </FormGroup>
                             </Col>
 
+                            {/* Icon Upload */}
                             <Col md={6}>
                                 <FormGroup>
                                     <Label for="image">Team Icon</Label>
@@ -118,39 +140,55 @@ const TeamUpdate: React.FC = () => {
                                 </FormGroup>
                             </Col>
                         </Row>
+
                         <Row>
+                            {/* Category Dropdown */}
                             <Col md={6}>
                                 <FormGroup>
-                                    <Label for="members">Members</Label>
+                                    <Label for="category">Category</Label>
                                     <select
-                                        multiple
                                         className={`form-control ${classnames({
-                                            "is-invalid": errors.members,
+                                            "is-invalid": errors.category,
                                         })}`}
-                                        id="members"
-                                        {...register("members", {
-                                            required: "Please select at least one member.",
+                                        {...register("category", {
+                                            required: "Category is required.",
                                         })}
                                     >
-                                        {teamMembers && teamMembers.map(
-                                            (member: { _id: string; fullname: string }) => (
-                                                <option key={member._id} value={member._id}>
-                                                    {member.fullname}
-                                                </option>
-                                            )
-                                        )}
+                                        <option value="">Select...</option>
+                                        <option value="Road Repair">Road Repair</option>
+                                        <option value="Streetlight Maintenance">
+                                            Streetlight Maintenance
+                                        </option>
                                     </select>
-                                    {errors.members && (
-                                        <small className="text-danger">{errors.members.message}</small>
-                                    )}
+                                </FormGroup>
+                            </Col>
+
+                            {/* Availability Dropdown */}
+                            <Col md={6}>
+                                <FormGroup>
+                                    <Label for="availability">Availability</Label>
+                                    <select
+                                        className={`form-control ${classnames({
+                                            "is-invalid": errors.availability,
+                                        })}`}
+                                        {...register("availability", {
+                                            required: "Availability is required.",
+                                        })}
+                                    >
+                                        <option value="">Select...</option>
+                                        <option value="Available">Available</option>
+                                        <option value="Busy">Busy</option>
+                                    </select>
                                 </FormGroup>
                             </Col>
                         </Row>
-
-                        {/* Buttons */}
                         <Row className="mt-4">
                             <Col>
-                                <Button type="submit" color="primary" disabled={isSubmitting || isLoading}>
+                                <Button
+                                    type="submit"
+                                    color="primary"
+                                    disabled={isSubmitting || isLoading}
+                                >
                                     {isSubmitting ? "Submitting..." : "Update Team"}
                                 </Button>
                             </Col>

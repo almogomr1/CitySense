@@ -5,6 +5,11 @@ import { getMeAPI } from './api/getMeAPI';
 import userReducer from './api/userSlice';
 import { userAPI } from './api/userAPI';
 import { teamAPI } from './api/teamAPI';
+import { issueAPI } from './api/issueAPI';
+import { notificationAPI } from './api/notificationAPI';
+import { analyticAPI } from './api/analyticAPI';
+import { moderationAPI } from './api/moderationAPI';
+import { reportAPI } from './api/reportAPI';
 
 export const store = configureStore({
   reducer: {
@@ -12,6 +17,11 @@ export const store = configureStore({
     [getMeAPI.reducerPath]: getMeAPI.reducer,
     [userAPI.reducerPath]: userAPI.reducer,
     [teamAPI.reducerPath]: teamAPI.reducer,
+    [issueAPI.reducerPath]: issueAPI.reducer,
+    [notificationAPI.reducerPath]: notificationAPI.reducer,
+    [analyticAPI.reducerPath]: analyticAPI.reducer,
+    [moderationAPI.reducerPath]: moderationAPI.reducer,
+    [reportAPI.reducerPath]: reportAPI.reducer,
     userState: userReducer
 
   },
@@ -22,6 +32,11 @@ export const store = configureStore({
         getMeAPI.middleware,
         userAPI.middleware,
         teamAPI.middleware,
+        issueAPI.middleware,
+        notificationAPI.middleware,
+        analyticAPI.middleware,
+        moderationAPI.middleware,
+        reportAPI.middleware,
     ]),
 });
 

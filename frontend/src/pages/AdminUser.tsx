@@ -19,7 +19,7 @@ import { toast } from 'react-toastify';
 import Select from 'react-select';
 import { useDeleteUserMutation, useGetUsersQuery, useSuspendUserMutation } from '../redux/api/userAPI';
 import { IUser } from '../redux/api/types';
-import { Archive, ChevronDown, MoreVertical, Slash, Trash2 } from 'react-feather';
+import { Edit, ChevronDown, MoreVertical, Slash, Trash2 } from 'react-feather';
 import FullScreenLoader from '../components/FullScreenLoader';
 import { useNavigate } from 'react-router-dom';
 
@@ -145,7 +145,7 @@ const AdminUser: React.FC = () => {
                             </DropdownToggle>
                             <DropdownMenu end container="body">
                                 <DropdownItem className="w-100" onClick={() => navigate(`/admin/users/${row._id}`)}>
-                                    <Archive size={14} className="mx-1" />
+                                    <Edit size={14} className="mx-1" />
                                     <span className="align-middle mx-2">Edit</span>
                                 </DropdownItem>
                                 <DropdownItem onClick={() => toggleSuspendModal(row._id)}>
@@ -182,6 +182,7 @@ const AdminUser: React.FC = () => {
                                 options={roleOptions}
                                 onChange={(e) => handleFilterChange('role', e?.value || '')}
                                 placeholder="Filter by Role"
+                                isClearable={true}
                             />
                         </Col>
                         <Col md={4}>
@@ -189,6 +190,7 @@ const AdminUser: React.FC = () => {
                                 options={statusOptions}
                                 onChange={(e) => handleFilterChange('status', e?.value || '')}
                                 placeholder="Filter by Status"
+                                isClearable={true}
                             />
                         </Col>
                     </Row>

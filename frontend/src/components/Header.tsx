@@ -89,11 +89,11 @@ const Header: React.FC = () => {
                         {!user && (
                             <>
                                 <Nav className="ms-auto" navbar>
-                                    <NavItem className="nav-item-responsive">
+                                    {/* <NavItem className="nav-item-responsive">
                                         <NavLink onClick={() => { navigate('/explore-issues'); mobileToggle(); }}>
                                             Explore Issues
                                         </NavLink>
-                                    </NavItem>
+                                    </NavItem> */}
                                     <UncontrolledDropdown nav inNavbar>
                                         <DropdownToggle nav caret>
                                             <img src={userImg} alt="user" className="user-img" />
@@ -138,7 +138,7 @@ const Header: React.FC = () => {
                                             Dashboard
                                         </NavLink>
                                     </NavItem>
-                                    <NavItem className="nav-item-responsive">
+                                    {/* <NavItem className="nav-item-responsive">
                                         <NavLink onClick={() => { navigate('/authority/teams'); mobileToggle(); }}>
                                             Teams
                                         </NavLink>
@@ -153,6 +153,11 @@ const Header: React.FC = () => {
                                             Notifications
                                         </NavLink>
                                     </NavItem>
+                                    <NavItem className="nav-item-responsive">
+                                        <NavLink onClick={() => { navigate('/authority/analytics'); mobileToggle(); }}>
+                                            Analytics
+                                        </NavLink>
+                                    </NavItem> */}
                                     <UncontrolledDropdown nav inNavbar>
                                         <DropdownToggle nav caret>
                                             <img src={userImg} alt="user" className="user-img" />
@@ -172,9 +177,15 @@ const Header: React.FC = () => {
                                             Morderation
                                         </NavLink>
                                     </NavItem>
+                                    
                                     <NavItem className="nav-item-responsive">
                                         <NavLink onClick={() => { navigate('/admin/users'); mobileToggle(); }}>
                                             Users
+                                        </NavLink>
+                                    </NavItem>
+                                    <NavItem className="nav-item-responsive">
+                                        <NavLink onClick={() => { navigate('/admin/report'); mobileToggle(); }}>
+                                            Report
                                         </NavLink>
                                     </NavItem>
                                     <UncontrolledDropdown nav inNavbar>

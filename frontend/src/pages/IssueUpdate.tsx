@@ -1,5 +1,6 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useCallback, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
     Row,
     Col,
@@ -14,56 +15,55 @@ import {
 import classnames from 'classnames';
 import GooglePlacesAutocomplete from 'react-google-autocomplete';
 import { SubmitHandler, useForm } from 'react-hook-form';
-import { IssueSubmissionRequest } from '../redux/api/types';
 import { toast } from 'react-toastify';
-import { useCreateIssueMutation, useGenerateAIMutation } from '../redux/api/issueAPI';
+import { useUpdateIssueMutation, useGetIssueQuery } from '../redux/api/issueAPI';
+import { IssueUpdateRequest } from '../redux/api/types';
 
-const IssueSubmission: React.FC = () => {
+const IssueUpdate: React.FC = () => {
     const navigate = useNavigate();
+    const { id } = useParams<{ id: string }>();
 
-    // React Hook Form
     const {
         register,
         handleSubmit,
         formState: { errors },
-        clearErrors,
-        setError,
-        watch,
         setValue,
-    } = useForm<IssueSubmissionRequest>();
+        clearErrors,
+        setError
+    } = useForm<IssueUpdateRequest>();
 
-    // Local State
     const [photo, setPhoto] = useState<File | null>(null);
     const [audio, setAudio] = useState<File | null>(null);
     const [address, setAddress] = useState<string>('');
-    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-    const [generatedDescription, setGeneratedDescription] = useState<string>('');
-    const [generatedPriority, setGeneratedPriority] = useState<string>('Moderate');
-    const [isGenerating, setIsGenerating] = useState(false);
 
-    // Handlers
+    const [updateIssue, { isLoading, isError, isSuccess, error }] = useUpdateIssueMutation();
+    const { data: issueData, isFetching } = useGetIssueQuery(id);
+
     const handleCancel = useCallback(() => {
         navigate('/');
     }, [navigate]);
 
-    const [createIssue, { isLoading, isError, error, isSuccess, data }] = useCreateIssueMutation();
-    const [generateAI] = useGenerateAIMutation();
+    useEffect(() => {
+        if (issueData) {
+            setValue('description', issueData.description);
+            setValue('category', issueData.category);
+            setValue('priority', issueData.priority);
+            setAddress(issueData.address);
+        }
+    }, [issueData]);
 
-    const onSubmit: SubmitHandler<IssueSubmissionRequest> = async (data) => {
-        setIsSubmitting(true);
-
+    const onSubmit: SubmitHandler<IssueUpdateRequest> = async (data) => {
         if (!address) {
             setError('address', {
                 type: 'manual',
                 message: 'Please select an address using the suggested option.',
             });
-            setIsSubmitting(false);
             return;
         }
 
         try {
             data.address = address;
-
+            console.log(data)
             const submissionData = new FormData();
             submissionData.append('description', data.description);
             if (photo) submissionData.append('photo', photo);
@@ -71,51 +71,18 @@ const IssueSubmission: React.FC = () => {
             submissionData.append('address', address);
             submissionData.append('category', data.category);
             submissionData.append('priority', data.priority);
-            await createIssue(submissionData);
+
+            await updateIssue({ id, issue: submissionData });
         } catch (error) {
             console.error(error);
-            toast.error('Failed to submit the issue. Please try again.');
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    const handleGenerateAIDescription = async () => {
-        const description = watch('description');
-        if (!description) {
-            toast.error("Description is required.");
-            return;
-        }
-        if (description.length < 10) {
-            toast.error("Description must be at least 10 characters.");
-            return;
-        }
-        setIsGenerating(true);
-        try {
-            const formData = new FormData();
-            formData.append('description', description);
-            if (photo) formData.append('photo', photo);
-            if (audio) formData.append('audio', audio);
-
-            const result = await generateAI(formData).unwrap();
-
-            if (result && result.description) {
-                setGeneratedDescription(result.description);
-                setGeneratedPriority(result.priority);
-                setValue('description', result.description);
-                setValue('priority', result.priority);
-            }
-        } catch (error) {
-            toast.error('Failed to generate description. Please try again.');
-        } finally {
-            setIsGenerating(false);
+            toast.error('Failed to update the issue. Please try again.');
         }
     };
 
     useEffect(() => {
         if (isSuccess) {
-            toast.success(data?.message || 'Issue submitted successfully!');
-            navigate('/citizen/issues');
+            toast.success('Issue updated successfully!');
+            navigate('/authority/dashboard');
         }
         if (isError) {
             const errorData = (error as any)?.data?.error;
@@ -128,13 +95,13 @@ const IssueSubmission: React.FC = () => {
                 toast.error(errorMsg, { position: 'top-right' });
             }
         }
-    }, [isLoading]);
+    }, [isSuccess, isError]);
 
     return (
         <div className="main-board container">
             <Row className="my-3">
                 <Col>
-                    <h3 className="mb-3">Report an Issue</h3>
+                    <h3 className="mb-3">Update Issue</h3>
                 </Col>
             </Row>
             <Card>
@@ -152,12 +119,12 @@ const IssueSubmission: React.FC = () => {
                                             required: 'Description is required.',
                                             minLength: {
                                                 value: 10,
-                                                message: 'Description must be at least 10 characters long.',
+                                                message: 'Description must be at least 10 characters long.'
                                             },
                                             maxLength: {
                                                 value: 5000,
-                                                message: 'Description must be less than 5000 characters long.',
-                                            },
+                                                message: 'Description must be less than 5000 characters long.'
+                                            }
                                         })}
                                     ></textarea>
                                     {errors.description && (
@@ -169,7 +136,7 @@ const IssueSubmission: React.FC = () => {
                             {/* Photo Upload */}
                             <Col md={6}>
                                 <FormGroup>
-                                    <Label for="photo">Upload a Photo (optional)</Label>
+                                    <Label for="photo">Update Photo (optional)</Label>
                                     <Input
                                         id="photo"
                                         type="file"
@@ -182,7 +149,7 @@ const IssueSubmission: React.FC = () => {
                             {/* Audio Upload */}
                             <Col md={6}>
                                 <FormGroup>
-                                    <Label for="audio">Record an Audio Message (optional)</Label>
+                                    <Label for="audio">Update Audio Message (optional)</Label>
                                     <Input
                                         id="audio"
                                         type="file"
@@ -207,26 +174,27 @@ const IssueSubmission: React.FC = () => {
                                             types: ['address'],
                                             componentRestrictions: { country: 'IL' },
                                         }}
+                                        defaultValue={address}
                                     />
                                     {errors.address && (
                                         <small className="text-danger mt-1">{errors.address.message}</small>
                                     )}
                                 </FormGroup>
                             </Col>
-
                             <Col md={6}>
                                 <FormGroup>
                                     <Label for="category">Category</Label>
                                     <select
                                         className={`form-control ${classnames({
-                                            'is-invalid': errors.category,
+                                            "is-invalid": errors.category,
                                         })}`}
-                                        {...register('category', { required: 'Category Type is required.' })}
+                                        {...register("category", { required: "Category Type is required." })}
                                     >
                                         <option value="">Select...</option>
                                         <option value="Road Maintenance">Road Maintenance</option>
                                         <option value="Waste Disposal">Waste Disposal</option>
                                         <option value="Streetlight Maintenance">Streetlight Maintenance</option>
+
                                     </select>
 
                                     {errors.category && (
@@ -257,32 +225,20 @@ const IssueSubmission: React.FC = () => {
                                 </FormGroup>
                             </Col>
                         </Row>
-
                         {/* Buttons */}
                         <Row className="mt-4">
                             <Col>
-                                <Button type="submit" color="primary" disabled={isSubmitting}>
-                                    {isSubmitting ? 'Submitting...' : 'Submit'}
+                                <Button type="submit" color="primary" disabled={isLoading || isFetching}>
+                                    {isLoading ? 'Updating...' : 'Update'}
                                 </Button>
                                 <Button
                                     type="button"
                                     color="secondary"
-                                    className="ms-2"
+                                    className="ms-3"
                                     onClick={handleCancel}
                                 >
                                     Cancel
                                 </Button>
-                                <Button className='ms-2' type="button" color="success" onClick={handleGenerateAIDescription} disabled={isGenerating}>
-                                    {isGenerating ? (
-                                        <>
-                                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                            Generating...
-                                        </>
-                                    ) : (
-                                        "Generate AI Description"
-                                    )}
-                                </Button>
-
                             </Col>
                         </Row>
                     </Form>
@@ -292,4 +248,4 @@ const IssueSubmission: React.FC = () => {
     );
 };
 
-export default IssueSubmission;
+export default IssueUpdate;
